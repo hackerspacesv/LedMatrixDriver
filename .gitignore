@@ -1,0 +1,7 @@
+dsn
+*.bin
+*.blif
+*.ex
+*.txt
+*.vcd
+.*~

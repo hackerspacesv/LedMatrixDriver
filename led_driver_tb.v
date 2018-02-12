@@ -1,4 +1,5 @@
-`timescale 1ms / 1us
+`timescale 1ms / 1ms
+
 module led_driver_tb();
 
   reg CLK_I = 0;
@@ -17,9 +18,17 @@ module led_driver_tb();
     RD,
     CLK_O,
     LATCH,
-    OE;
+    OE,
+    LED1,
+    LED2,
+    LED3,
+    LED4,
+    LED5,
+    LED6,
+    LED7,
+    LED8,;
 
-  led_driver DUT(
+  led_driver #(.BASE_FREQ(12000000),.TARGET_FREQ(12000000)) DUT(
     .CLK_I(CLK_I),
     .R0(R0),
     .G0(G0),
@@ -33,13 +42,21 @@ module led_driver_tb();
     .RD(RD),
     .CLK_O(CLK_O),
     .LATCH(LATCH),
-    .OE(OE)
+    .OE(OE),
+    .LED1(LED1),
+    .LED2(LED2),
+    .LED3(LED3),
+    .LED4(LED4),
+    .LED5(LED5),
+    .LED6(LED6),
+    .LED7(LED7),
+    .LED8(LED8)
   );
 
   initial begin
     $dumpfile("led_driver_tb.vcd");
     $dumpvars(0, led_driver_tb);
-    # 10240 $finish;
+    # 32256 $finish;
   end
 
 endmodule

@@ -1,43 +1,80 @@
 
 module led_driver(
-  input  CLK_I,
-  output R0,
-  output G0,
-  output B0,
-  output R1,
-  output G1,
-  output B1,
-  output RA,
-  output RB,
-  output RC,
-  output RD,
-  output CLK_O,
-  output LATCH,
-  output OE
+  input  CLK_I,   // Clock from FPGA
+  output R0,      // Serial data for red LEDs in top bank
+  output G0,      // Serial data for green LEDs in top bank
+  output B0,      // Serial data for blue LEDs in top bank
+  output R1,      // Serial data for red LEDs in bottom bank
+  output G1,      // Serial data for green LEDs in bottom bank
+  output B1,      // Serial data for blue LEDs in bottom bank
+  output RA,      // Demux address line (LSB)
+  output RB,      // Demux address line
+  output RC,      // Demux address line
+  output RD,      // Demux address line (MSB)
+  output CLK_O,   // Clock output
+  output LATCH,   // Latch signal
+  output OE,      // Output enable
+  output LED1,    // Debug LEDs
+  output LED2,    // Debug LEDs
+  output LED3,    // Debug LEDs
+  output LED4,    // Debug LEDs
+  output LED5,
+  output LED6,
+  output LED7,
+  output LED8
 );
-   reg [31:0] red0, red1;
-   reg [31:0] green0, green1;
-   reg [31:0] blue0, blue1;
-   reg [3:0] current_row;
-   reg [4:0] current_bit;
-   reg inc_row, latch_signal,oe_signal;
+   parameter BASE_FREQ = 12000000;
+   parameter TARGET_FREQ = 240;
 
-   initial begin
+   reg [32:0] cicle_counter;
+   reg [32:0] prescaler;
+
+   //TODO: Add access to memory?
+   reg [31:0] red0, red1; // Red color registers
+   reg [31:0] green0, green1; // Green color registers
+   reg [31:0] blue0, blue1; // Blue color registers
+
+   reg [3:0] current_row; // Current row (top/bottom) banks
+   reg [4:0] current_bit; // Current bit
+   reg inc_row,latch_signal,oe_signal; // Internal signal registers
+
+   reg out_clk; // Output clock
+
+   initial begin // Initialization for registers
+    cicle_counter = 0;
+    prescaler = BASE_FREQ/TARGET_FREQ;
+
+    // Test color information
     red0 = 32'hAAAAAAAA;
     red1 = 32'h55555555;
     green0 = 32'hAAAAAAAA;
     green1 = 32'h55555555;
     blue0 = 32'hAAAAAAAA;
     blue1 = 32'h55555555;
-    current_bit = 5'b0;
-    current_row = 4'b1111;
-    inc_row  = 1'b0;
-    latch_signal = 1'b0;
-    oe_signal = 1'b0;
+
+    current_bit = 5'b0; // Stores the current bit to be sent
+    current_row = 4'b1111; // Stores the current row
+    inc_row  = 1'b0; // Signal to increase current row
+    latch_signal = 1'b0; // Signal to send the latch signal
+    oe_signal = 1'b0; // Signal to enable the output
+
+    out_clk = 1'b1; // Output clock generator
    end
    
-   always @(posedge CLK_I) begin
-    if (inc_row)
+   // Clock generation
+   always @(negedge CLK_I) begin
+     if (cicle_counter < (prescaler-1)) begin
+       cicle_counter <= cicle_counter+1;
+     end
+     else begin
+       out_clk <= ~out_clk;
+       cicle_counter <= 0;
+     end
+   end
+
+   // Color transference
+   always @(posedge out_clk) begin
+    if (inc_row) // Increase row after finish the transference
     begin
       current_row <= current_row + 1;
       inc_row <= 0;
@@ -45,13 +82,13 @@ module led_driver(
 
     current_bit <= current_bit + 1;
 
-    if (current_bit == 5'd31)
+    if (current_bit == 5'd31) // 
     begin
       inc_row <= 1;
     end
    end
 
-   always @(negedge CLK_I) begin
+   always @(negedge out_clk) begin
     if (latch_signal)
     begin
       latch_signal <= 0;
@@ -68,20 +105,32 @@ module led_driver(
       oe_signal <= 0;
     end
    end
-   // Multiplexer output
-   assign RA = current_row[0];
-   assign RB = current_row[1];
-   assign RC = current_row[2];
-   assign RD = current_row[3];
 
-   // Color info
+   assign CLK_O = out_clk;
+   assign LED7 = out_clk;
+   assign LED8 = CLK_I;
+
+   // Change demux address using current_row
+   assign RA = current_row[0];
+   assign LED1 = current_row[0];
+   assign RB = current_row[1];
+   assign LED2 = current_row[1];
+   assign RC = current_row[2];
+   assign LED3 = current_row[2];
+   assign RD = current_row[3];
+   assign LED4 = current_row[3];
+
+   // Send color info
    assign R0 = red0[current_bit];
    assign G0 = green0[current_bit];
    assign B0 = blue0[current_bit];
    assign R1 = red1[current_bit];
    assign G1 = green1[current_bit];
    assign B1 = blue1[current_bit];
-   assign CLK_O = CLK_I; // TODO: Prescale to generate fixed freq CLK_O
+
+   // Control signals
    assign LATCH = latch_signal;
+   assign LED5 = latch_signal;
    assign OE = oe_signal;
+   assign LED6 = oe_signal;
 endmodule // top

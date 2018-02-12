@@ -14,6 +14,10 @@ $(PROJ_NAME)_tb.vcd: $(PROJ_NAME)_tb.v $(PROJ_NAME).v
 run_simulation: $(PROJ_NAME)_tb.vcd
 	gtkwave $(PROJ_NAME)_tb.vcd
 
+.PHONY: flash_bitstream
+flash_bitstream: $(PROJ_NAME).bin
+	iceprog $(PROJ_NAME).bin
+
 clean:
 	rm -f $(PROJ_NAME).blif $(PROJ_NAME).txt $(PROJ_NAME).ex $(PROJ_NAME).bin
 	rm -f dsn $(PROJ_NAME)_tb.vcd
