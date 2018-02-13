@@ -26,7 +26,7 @@ module led_driver_tb();
     LED5,
     LED6,
     LED7,
-    LED8,;
+    LED8;
 
   led_driver #(.BASE_FREQ(12000000),.TARGET_FREQ(12000000)) DUT(
     .CLK_I(CLK_I),

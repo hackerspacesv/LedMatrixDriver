@@ -24,7 +24,7 @@ module led_driver(
   output LED8
 );
    parameter BASE_FREQ = 12000000;
-   parameter TARGET_FREQ = 240;
+   parameter TARGET_FREQ = 2400;
 
    reg [32:0] cicle_counter;
    reg [32:0] prescaler;
@@ -37,6 +37,7 @@ module led_driver(
    reg [3:0] current_row; // Current row (top/bottom) banks
    reg [4:0] current_bit; // Current bit
    reg inc_row,latch_signal,oe_signal; // Internal signal registers
+   reg oe_output, latch_output;
 
    reg out_clk; // Output clock
 
@@ -73,7 +74,7 @@ module led_driver(
    end
 
    // Color transference
-   always @(posedge out_clk) begin
+   always @(negedge out_clk) begin
     if (inc_row) // Increase row after finish the transference
     begin
       current_row <= current_row + 1;
@@ -86,9 +87,19 @@ module led_driver(
     begin
       inc_row <= 1;
     end
+    
+    //if (inc_row)
+    //begin
+    //  latch_signal <= 1;
+    //  oe_signal <= 1;
+    //end
+    //if(latch_signal)
+    //begin
+    //  latch_signal <= 0;
+    //end
    end
 
-   always @(negedge out_clk) begin
+   always @(posedge out_clk) begin
     if (latch_signal)
     begin
       latch_signal <= 0;
@@ -131,6 +142,6 @@ module led_driver(
    // Control signals
    assign LATCH = latch_signal;
    assign LED5 = latch_signal;
-   assign OE = oe_signal;
-   assign LED6 = oe_signal;
+   assign OE = ~oe_signal;
+   assign LED6 = ~oe_signal;
 endmodule // top
