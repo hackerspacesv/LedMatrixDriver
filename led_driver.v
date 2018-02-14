@@ -24,7 +24,7 @@ module led_driver(
   output LED8
 );
   parameter BASE_FREQ = 12000000;
-  parameter TARGET_FREQ = 300;
+  parameter TARGET_FREQ = 480000;
 
   reg [32:0] cicle_counter;
   reg [32:0] prescaler;
@@ -33,31 +33,30 @@ module led_driver(
   reg [31:0] blue0, blue1; // Blue color registers
 
   reg [3:0] current_row; // Current row (top/bottom) banks
-  reg [4:0] current_bit; // Current bit
+  reg [6:0] current_bit; // Current bit
+  reg [6:0] out_bit; // Current bit
   reg inc_row,latch_signal,oe_signal; // Internal signal registers
   reg oe_output, latch_output;
 
-  reg pos_edge_clki;
-  reg neg_edge_clki;
-  reg edge_clki;
-
   reg out_clk; // Output clock
   reg out_clk_en; // Output clock control
+  reg out_clk_o;
 
   reg [1:0] current_state;
 
   initial begin
-    out_clk = 1'b0;
-    out_clk_en = 1'b1;
+    out_clk = 0;
+    out_clk_o = 0;
+    out_clk_en = 1;
     cicle_counter = 0;
     current_state = 0;
     prescaler = BASE_FREQ/TARGET_FREQ-1;
     // Test color information
-    red0 = 32'hAAAAAAAA;
+    red0 = 32'hAAAAAA00;
     red1 = 32'h55555555;
-    green0 = 32'hAAAAAAAA;
+    green0 = 32'hAAA00AAA;
     green1 = 32'h55555555;
-    blue0 = 32'hAAAAAAAA;
+    blue0 = 32'hAA00AAAA;
     blue1 = 32'h55555555;
 
     current_bit = 5'b0; // Stores the current bit to be sent
@@ -65,155 +64,75 @@ module led_driver(
     inc_row  = 1'b0; // Signal to increase current row
     latch_signal = 1'b0; // Signal to send the latch signal
     oe_signal = 1'b0; // Signal to enable the output
+    out_bit = 0;
+  end
+
+  always @(out_clk, out_clk_en)
+  begin
+    out_clk_o = out_clk & out_clk_en;
   end
 
   // External clock divider
-  always @(CLK_I)
+  always @(negedge CLK_I)
   begin
     cicle_counter <= cicle_counter + 1;
 
-    // Clock g
+    // Internal clock generation
     if (cicle_counter==prescaler)
     begin
 
-      if (out_clk_en)
+      out_clk <= ~out_clk;
+
+      // Normal running counter
+      if (current_state == 0)
       begin
-        out_clk <= ~out_clk;
-      end
-      else
-        if(inc_row)
+        if(out_clk)
         begin
-          if(latch_signal)
+          current_bit <= current_bit + 1;
+          if (out_bit < 31)
           begin
-            latch_signal <= 0;
-            out_clk_en <= 1;
+            out_bit <= out_bit + 1;
+            oe_signal <= 1;
           end
           else
           begin
-            latch_signal <= 1;
+            out_bit <= 0;
           end
         end
+        else
+        begin
+          if (current_bit >= 31)
+          begin
+            oe_signal <= 0;
+          end
+          if (current_bit == 32)
+          begin
+            out_clk_en <= 0;
+            current_state <= 1;
+            latch_signal <= 1;
+            current_row <= current_row + 1;
+          end
+        end
+      end
+
+      if (current_state == 1)
       begin
+        if(out_clk)
+        begin
+          latch_signal <= 0;
+          current_bit <= 0;
+          out_bit <= 0;
+          current_state <= 0;
+          out_clk_en <= 1;
+        end
       end
 
       cicle_counter <= 0;
     end
   end
 
-  always @(posedge out_clk) begin
-    if (latch_signal)
-    begin
-      //latch_signal <= 0;
-    end
-
-    if (inc_row)
-    begin
-      //latch_signal <= 1;
-      oe_signal <= 1;
-    end
-
-    if (current_bit == 5'd31)
-    begin
-      oe_signal <= 0;
-    end
-  end
-
-  always @(negedge out_clk) begin
-    if (inc_row) // Increase row after finish the transference
-    begin
-      current_row <= current_row + 1;
-      inc_row <= 0;
-      out_clk_en <= 1;
-    end
-
-    current_bit <= current_bit + 1;
-
-    if (current_bit == 5'd31) // 
-    begin
-      inc_row <= 1;
-      out_clk_en <= 0;
-    end
-  end
-/*
-
-   initial begin // Initialization for registers
-    cicle_counter = 0;
-    prescaler = BASE_FREQ/TARGET_FREQ;
-
-    // Test color information
-    red0 = 32'hAAAAAAAA;
-    red1 = 32'h55555555;
-    green0 = 32'hAAAAAAAA;
-    green1 = 32'h55555555;
-    blue0 = 32'hAAAAAAAA;
-    blue1 = 32'h55555555;
-
-    current_bit = 5'b0; // Stores the current bit to be sent
-    current_row = 4'b1111; // Stores the current row
-    inc_row  = 1'b0; // Signal to increase current row
-    latch_signal = 1'b0; // Signal to send the latch signal
-    oe_signal = 1'b0; // Signal to enable the output
-
-    out_clk = 1'b1; // Output clock generator
-   end
-   
-   // Clock generation
-   always @(negedge CLK_I) begin
-     if (cicle_counter < (prescaler-1)) begin
-       cicle_counter <= cicle_counter+1;
-     end
-     else begin
-       out_clk <= ~out_clk;
-       cicle_counter <= 0;
-     end
-   end
-
-   // Color transference
-   always @(negedge out_clk) begin
-    if (inc_row) // Increase row after finish the transference
-    begin
-      current_row <= current_row + 1;
-      inc_row <= 0;
-    end
-
-    current_bit <= current_bit + 1;
-
-    if (current_bit == 5'd31) // 
-    begin
-      inc_row <= 1;
-    end
-    
-    //if (inc_row)
-    //begin
-    //  latch_signal <= 1;
-    //  oe_signal <= 1;
-    //end
-    //if(latch_signal)
-    //begin
-    //  latch_signal <= 0;
-    //end
-   end
-
-   always @(posedge out_clk) begin
-    if (latch_signal)
-    begin
-      latch_signal <= 0;
-    end
-
-    if (inc_row)
-    begin
-      latch_signal <= 1;
-      oe_signal <= 1;
-    end
-
-    if (current_bit == 5'd31)
-    begin
-      oe_signal <= 0;
-    end
-   end
-*/
-   assign CLK_O = out_clk;
-   assign LED7 = out_clk;
+   assign CLK_O = out_clk_o;
+   assign LED7 = out_clk_o;
    assign LED8 = CLK_I;
 
    // Change demux address using current_row
@@ -227,12 +146,12 @@ module led_driver(
    assign LED4 = current_row[3];
 
    // Send color info
-   assign R0 = red0[current_bit];
-   assign G0 = green0[current_bit];
-   assign B0 = blue0[current_bit];
-   assign R1 = red1[current_bit];
-   assign G1 = green1[current_bit];
-   assign B1 = blue1[current_bit];
+   assign R0 = red0[out_bit];
+   assign G0 = green0[out_bit];
+   assign B0 = blue0[out_bit];
+   assign R1 = red1[out_bit];
+   assign G1 = green1[out_bit];
+   assign B1 = blue1[out_bit];
 
    // Control signals
    assign LATCH = latch_signal;

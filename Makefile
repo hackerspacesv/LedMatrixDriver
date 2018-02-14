@@ -3,7 +3,7 @@ PROJ_NAME=led_driver
 $(PROJ_NAME).bin: $(PROJ_NAME).v $(PROJ_NAME).pcf
 	yosys -q -p "synth_ice40 -blif $(PROJ_NAME).blif" $(PROJ_NAME).v
 	arachne-pnr -d 8k -p $(PROJ_NAME).pcf $(PROJ_NAME).blif -o $(PROJ_NAME).txt
-	icebox_explain $(PROJ_NAME).txt > $(PROJ_NAME).ex
+	#icebox_explain $(PROJ_NAME).txt > $(PROJ_NAME).ex
 	icepack $(PROJ_NAME).txt $(PROJ_NAME).bin
 
 $(PROJ_NAME)_tb.vcd: $(PROJ_NAME)_tb.v $(PROJ_NAME).v
