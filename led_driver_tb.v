@@ -2,9 +2,11 @@
 
 module led_driver_tb();
 
+  // Clock generation
   reg CLK_I = 0;
   always #10 CLK_I = ~CLK_I;
 
+  // Pin connections
   wire
     R0,
     G0,
@@ -28,6 +30,7 @@ module led_driver_tb();
     LED7,
     LED8;
 
+  // Module initialization
   led_driver #(.BASE_FREQ(12000000),.TARGET_FREQ(12000000)) DUT(
     .CLK_I(CLK_I),
     .R0(R0),
@@ -53,6 +56,7 @@ module led_driver_tb();
     .LED8(LED8)
   );
 
+  // Generate output for the wave analyzer
   initial begin
     $dumpfile("led_driver_tb.vcd");
     $dumpvars(0, led_driver_tb);

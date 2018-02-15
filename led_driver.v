@@ -24,7 +24,7 @@ module led_driver(
   output LED8
 );
   parameter BASE_FREQ = 12000000;
-  parameter TARGET_FREQ = 480000;
+  parameter TARGET_FREQ = 6000000;
 
   reg [32:0] cicle_counter;
   reg [32:0] prescaler;
@@ -45,28 +45,40 @@ module led_driver(
   reg [1:0] current_state;
 
   initial begin
+    // Internal clock signal
+    // generated from CLK_I
     out_clk = 0;
+    // Output signal wired to the output pin
     out_clk_o = 0;
+    // Enables the clock output
     out_clk_en = 1;
+
+    // Internal cicle counter
     cicle_counter = 0;
+
+    // State-machine counter
     current_state = 0;
+    
+    // Prescaler calculator for internal clock generation
     prescaler = BASE_FREQ/TARGET_FREQ-1;
+
     // Test color information
-    red0 = 32'hAAAAAA00;
-    red1 = 32'h55555555;
-    green0 = 32'hAAA00AAA;
-    green1 = 32'h55555555;
-    blue0 = 32'hAA00AAAA;
-    blue1 = 32'h55555555;
+    red0 = 32'h55F00574;
+    red1 = 32'h0057455F;
+    green0 = 32'hAA0F056A;
+    green1 = 32'hF056AAA0;
+    blue0 = 32'h5500F559;
+    blue1 = 32'h0F559550;
 
     current_bit = 5'b0; // Stores the current bit to be sent
     current_row = 4'b1111; // Stores the current row
     inc_row  = 1'b0; // Signal to increase current row
     latch_signal = 1'b0; // Signal to send the latch signal
     oe_signal = 1'b0; // Signal to enable the output
-    out_bit = 0;
+    out_bit = 0; // Output bit signal
   end
 
+  // Enable/disable the output clock
   always @(out_clk, out_clk_en)
   begin
     out_clk_o = out_clk & out_clk_en;
@@ -83,7 +95,8 @@ module led_driver(
 
       out_clk <= ~out_clk;
 
-      // Normal running counter
+      // State machine:
+      // 0: Running clock
       if (current_state == 0)
       begin
         if(out_clk)
@@ -115,6 +128,7 @@ module led_driver(
         end
       end
 
+      // 1: latch and oe signal control
       if (current_state == 1)
       begin
         if(out_clk)
@@ -131,6 +145,7 @@ module led_driver(
     end
   end
 
+   // Output connections
    assign CLK_O = out_clk_o;
    assign LED7 = out_clk_o;
    assign LED8 = CLK_I;
