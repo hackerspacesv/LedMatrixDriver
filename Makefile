@@ -10,6 +10,9 @@ $(PROJ_NAME)_tb.vcd: $(PROJ_NAME)_tb.v $(PROJ_NAME).v
 	iverilog -o dsn $(PROJ_NAME)_tb.v $(PROJ_NAME).v
 	vvp dsn
 
+.PHONY: update_simulation
+update_simulation: $(PROJ_NAME)_tb.vcd
+
 .PHONY: run_simulation
 run_simulation: $(PROJ_NAME)_tb.vcd
 	gtkwave $(PROJ_NAME)_tb.vcd

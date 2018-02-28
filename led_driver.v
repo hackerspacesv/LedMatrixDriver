@@ -25,12 +25,18 @@ module led_driver(
 );
   parameter BASE_FREQ = 12000000;
   parameter TARGET_FREQ = 6000000;
+  parameter OVERSCAN = 16;
+
+  reg [23:0] frame_buffer[0:1023];
+  reg [8:0] pixel_pos;
+  reg [23:0] color_bank0;
+  reg [23:0] color_bank1;
 
   reg [32:0] cicle_counter;
   reg [32:0] prescaler;
-  reg [31:0] red0, red1; // Red color registers
-  reg [31:0] green0, green1; // Green color registers
-  reg [31:0] blue0, blue1; // Blue color registers
+  reg [1:0] red0, red1; // Red color registers
+  reg [1:0] green0, green1; // Green color registers
+  reg [1:0] blue0, blue1; // Blue color registers
 
   reg [3:0] current_row; // Current row (top/bottom) banks
   reg [6:0] current_bit; // Current bit
@@ -41,10 +47,19 @@ module led_driver(
   reg out_clk; // Output clock
   reg out_clk_en; // Output clock control
   reg out_clk_o;
+  
+  reg ready;
 
   reg [1:0] current_state;
 
   initial begin
+    // Load pattern from file
+    $readmemh("led_pattern.list", frame_buffer);
+
+    pixel_pos = 9'h000;
+    color_bank0 = 0;
+    color_bank1 = 0;
+
     // Internal clock signal
     // generated from CLK_I
     out_clk = 0;
@@ -58,24 +73,26 @@ module led_driver(
 
     // State-machine counter
     current_state = 0;
-    
+
     // Prescaler calculator for internal clock generation
     prescaler = BASE_FREQ/TARGET_FREQ-1;
 
     // Test color information
-    red0 = 32'h55F00574;
-    red1 = 32'h0057455F;
-    green0 = 32'hAA0F056A;
-    green1 = 32'hF056AAA0;
-    blue0 = 32'h5500F559;
-    blue1 = 32'h0F559550;
+    red0 = 1'b1;
+    red1 = 1'b1;
+    green0 = 1'b1;
+    green1 = 1'b1;
+    blue0 = 1'b1;
+    blue1 = 1'b1;
 
     current_bit = 5'b0; // Stores the current bit to be sent
-    current_row = 4'b1111; // Stores the current row
+    current_row = 0; // Stores the current row
     inc_row  = 1'b0; // Signal to increase current row
     latch_signal = 1'b0; // Signal to send the latch signal
     oe_signal = 1'b0; // Signal to enable the output
     out_bit = 0; // Output bit signal
+    
+    ready = 0;
   end
 
   // Enable/disable the output clock
@@ -84,6 +101,24 @@ module led_driver(
     out_clk_o = out_clk & out_clk_en;
   end
 
+  always @(posedge CLK_I)
+  begin
+
+    current_row <= pixel_pos[8:5];
+    color_bank0 <= frame_buffer[{1'b0,(pixel_pos-1'b1)}];
+    color_bank1 <= frame_buffer[{1'b1,(pixel_pos-1'b1)}];
+
+    red0 <= (color_bank0[7:0] > 8'h00);
+    green0 <= (color_bank0[15:8] > 8'h00);
+    blue0 <= (color_bank0[23:16] > 8'h00);
+
+    red1 <= (color_bank1[7:0] > 8'h00);
+    green1 <= (color_bank1[15:8] > 8'h00);
+    blue1 <= (color_bank1[23:16] > 8'h00);
+
+    pixel_pos <= pixel_pos + 1;
+  end
+/*
   // External clock divider
   always @(negedge CLK_I)
   begin
@@ -144,7 +179,7 @@ module led_driver(
       cicle_counter <= 0;
     end
   end
-
+*/
    // Output connections
    assign CLK_O = out_clk_o;
    assign LED7 = out_clk_o;
