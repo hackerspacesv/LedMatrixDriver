@@ -60,7 +60,7 @@ module led_driver_tb();
   initial begin
     $dumpfile("led_driver_tb.vcd");
     $dumpvars(0, led_driver_tb);
-    # 32256 $finish;
+    # 200000 $finish;
   end
 
 endmodule
