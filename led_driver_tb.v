@@ -1,6 +1,23 @@
+/*
+ * This file is part of LEDMatrixDriver.
+ * Copyright 2018 Mario Gomez <mario.gomez@teubi.co>
+ *
+ * LEDMatrixDriver is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+
+ * LEDMatrixDriver is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with LEDMatrixDriver.  If not, see <http://www.gnu.org/licenses/>.
+*/
 `timescale 1ms / 1ms
 
-module led_driver_tb();
+module led_driver_tb(); // BEGIN: Test bench for LED Matrix Driver
 
   // Clock generation
   reg CLK_I = 0;
@@ -31,7 +48,7 @@ module led_driver_tb();
     LED8;
 
   // Module initialization
-  led_driver #(.BASE_FREQ(12000000),.TARGET_FREQ(12000000)) DUT(
+  led_driver #(.BASE_FREQ(12000000),.TARGET_FREQ(6000000)) DUT(
     .CLK_I(CLK_I),
     .R0(R0),
     .G0(G0),
@@ -60,7 +77,7 @@ module led_driver_tb();
   initial begin
     $dumpfile("led_driver_tb.vcd");
     $dumpvars(0, led_driver_tb);
-    # 200000 $finish;
+    # 400000 $finish;
   end
 
-endmodule
+endmodule // END: Test bench for LED Matrix Driver
