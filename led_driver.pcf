@@ -1,17 +1,17 @@
 # For the iCE40HX-8K Breakout Board
-set_io R0     D15
-set_io G0     E16
-set_io B0     E14
-set_io R1     F15
-set_io G1     F16
-set_io B1     G15
+set_io R0     P15
+set_io G0     R15
+set_io B0     P16
+set_io R1     M15
+set_io G1     N16
+set_io B1     M16
 set_io CLK_O  J14
-set_io LATCH  J15
-set_io OE     K14
-set_io RA     H14
-set_io RB     G16
-set_io RC     F14
-set_io RD     H16
+set_io LATCH  G14
+set_io OE     F14
+set_io RA     K15
+set_io RB     L16
+set_io RC     K16
+set_io RD     K14
 
 # Board clock
 set_io CLK_I  J3
